@@ -203,3 +203,11 @@ letterElements.body.addEventListener('click', async (event) => {
 
 async function initializeLetters() { try { letters = await loadLetters(); renderLetters(); } catch (error) { renderLetters(); showToast(error.message); } }
 initializeLetters();
+
+document.querySelectorAll('.dashboard-nav-item').forEach((button) => {
+  button.addEventListener('click', () => {
+    const showingLetters = button.dataset.view === 'letterView';
+    document.querySelectorAll('.dashboard-nav-item').forEach((item) => item.classList.toggle('active', item === button));
+    document.querySelectorAll('.dashboard-view').forEach((view) => { view.hidden = showingLetters ? view.id !== 'letterView' : view.id === 'letterView'; });
+  });
+});

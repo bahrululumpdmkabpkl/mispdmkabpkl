@@ -21,7 +21,12 @@
         <div class="topbar-date" id="todayLabel"></div>
       </header>
 
-      <section class="intro-row">
+      <nav class="dashboard-nav" aria-label="Menu dashboard">
+        <button class="dashboard-nav-item active" type="button" data-view="agendaView">Agenda</button>
+        <button class="dashboard-nav-item" type="button" data-view="letterView">Surat Masuk</button>
+      </nav>
+
+      <section class="intro-row dashboard-view" id="agendaView">
         <div>
           <p class="section-kicker">Jadwal terkoordinasi</p>
           <h2>Semua agenda, lebih tertata.</h2>
@@ -30,13 +35,13 @@
         <button class="primary-button" id="addButton" type="button"><span aria-hidden="true">+</span> Tambah agenda</button>
       </section>
 
-      <section class="stats-grid" aria-label="Ringkasan agenda">
+      <section class="stats-grid dashboard-view" aria-label="Ringkasan agenda">
         <div class="stat-card accent-card"><span>Total agenda</span><strong id="totalCount">0</strong><small>tersimpan saat ini</small></div>
         <div class="stat-card"><span>Agenda mendatang</span><strong id="upcomingCount">0</strong><small>mulai hari ini</small></div>
         <div class="stat-card"><span>Pemakai aktif</span><strong id="userCount">0</strong><small>orang terjadwal</small></div>
       </section>
 
-      <section class="agenda-panel">
+      <section class="agenda-panel dashboard-view" id="agendaPanel">
         <div class="panel-heading">
           <div>
             <p class="section-kicker">Daftar agenda</p>
@@ -61,7 +66,7 @@
         </div>
       </section>
 
-      <section class="agenda-panel surat-panel">
+      <section class="agenda-panel surat-panel dashboard-view" id="letterView" hidden>
         <div class="panel-heading">
           <div>
             <p class="section-kicker">Administrasi</p>

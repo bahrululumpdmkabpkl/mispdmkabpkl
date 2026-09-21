@@ -32,8 +32,11 @@ h1, h2, h3, p { margin-top: 0; } h1 { margin-bottom: 0; font: 700 19px 'Space Gr
 @media (max-width: 700px) { .app-shell { padding: 23px 17px 48px; }.topbar { padding-bottom: 37px; }.topbar-date { display: none; }.intro-row { display: block; }.intro-row .primary-button { margin-top: 22px; width: 100%; }.intro-row h2 { font-size: 28px; }.stats-grid { gap: 8px; }.stat-card { min-height: 106px; padding: 14px; }.stat-card strong { font-size: 24px; }.stat-card small { font-size: 10px; }.panel-heading { display: block; padding: 21px 17px 17px; }.search-box { width: 100%; margin-top: 17px; }.agenda-panel th, .agenda-panel td { padding-right: 17px; padding-left: 17px; }.modal { padding: 25px 20px; } }
 
 .panel-tools { display: flex; align-items: center; gap: 9px; }
+.dashboard-nav { display: flex; gap: 7px; margin: -22px 0 34px; padding: 5px; width: fit-content; border: 1px solid var(--line); border-radius: 9px; background: #f8faf6cc; }
+.dashboard-nav-item { border: 0; border-radius: 6px; padding: 9px 18px; color: var(--muted); background: transparent; font-size: 13px; font-weight: 700; }
+.dashboard-nav-item.active { color: white; background: var(--teal); box-shadow: 0 5px 12px #153b3b24; }
 .surat-panel { margin-top: 22px; }
 .file-link { color: var(--teal); font-weight: 700; text-decoration: none; }
 .file-link:hover { text-decoration: underline; }
 .file-note { margin: -7px 0 17px; color: var(--muted); font-size: 11px; font-weight: 500; }
-@media (max-width: 700px) { .panel-tools { display: block; }.panel-tools .primary-button { width: 100%; margin-top: 10px; } }
+@media (max-width: 700px) { .dashboard-nav { width: 100%; margin-top: -13px; margin-bottom: 26px; }.dashboard-nav-item { flex: 1; }.panel-tools { display: block; }.panel-tools .primary-button { width: 100%; margin-top: 10px; } }
