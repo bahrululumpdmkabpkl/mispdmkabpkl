@@ -115,3 +115,91 @@ async function initialize() {
   catch (error) { render(); showToast(error.message); }
 }
 initialize();
+
+let editingLetterId = null;
+let letters = [];
+const letterElements = {
+  body: document.querySelector('#letterBody'), empty: document.querySelector('#letterEmptyState'), modal: document.querySelector('#letterModalBackdrop'),
+  form: document.querySelector('#letterForm'), date: document.querySelector('#letterDateInput'), sender: document.querySelector('#senderInput'), subject: document.querySelector('#subjectInput'),
+  file: document.querySelector('#pdfInput'), search: document.querySelector('#letterSearchInput'), title: document.querySelector('#letterModalTitle'), kicker: document.querySelector('#letterModalKicker'), note: document.querySelector('#currentFileNote')
+};
+
+async function loadLetters() {
+  if (!cloudEnabled) return JSON.parse(localStorage.getItem('surat-masuk-records') || '[]');
+  const response = await fetch(`${cloudConfig.url}/rest/v1/surat_masuk?select=id,tanggal,pengirim,perihal,file_path,file_name&order=tanggal.desc`, { headers: cloudHeaders() });
+  if (!response.ok) throw new Error('Gagal mengambil surat masuk dari Supabase');
+  return response.json();
+}
+
+async function uploadPdf(file) {
+  if (!file) return null;
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) throw new Error('File harus berformat PDF');
+  if (file.size > 10 * 1024 * 1024) throw new Error('Ukuran PDF maksimal 10 MB');
+  if (!cloudEnabled) return { file_path: '', file_name: file.name };
+  const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+  const response = await fetch(`${cloudConfig.url}/storage/v1/object/surat-masuk/${path}`, { method: 'POST', headers: { apikey: cloudConfig.anonKey, Authorization: `Bearer ${cloudConfig.anonKey}`, 'Content-Type': 'application/pdf', 'x-upsert': 'false' }, body: file });
+  if (!response.ok) throw new Error('Gagal mengunggah PDF');
+  return { file_path: path, file_name: file.name };
+}
+
+function publicPdfUrl(path) { return path ? `${cloudConfig.url}/storage/v1/object/public/surat-masuk/${encodeURIComponent(path).replace(/%2F/g, '/')}` : ''; }
+
+async function saveLetter(data, file) {
+  const uploaded = file ? await uploadPdf(file) : null;
+  const payload = uploaded ? { ...data, ...uploaded } : data;
+  if (!cloudEnabled) {
+    if (editingLetterId) letters = letters.map((letter) => letter.id === editingLetterId ? { ...letter, ...payload } : letter);
+    else letters.push({ id: crypto.randomUUID(), ...payload });
+    localStorage.setItem('surat-masuk-records', JSON.stringify(letters));
+    return;
+  }
+  const url = editingLetterId ? `${cloudConfig.url}/rest/v1/surat_masuk?id=eq.${editingLetterId}` : `${cloudConfig.url}/rest/v1/surat_masuk`;
+  const response = await fetch(url, { method: editingLetterId ? 'PATCH' : 'POST', headers: { ...cloudHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(payload) });
+  if (!response.ok) throw new Error('Gagal menyimpan surat masuk');
+}
+
+async function removeLetter(letter) {
+  if (cloudEnabled && letter.file_path) await fetch(`${cloudConfig.url}/storage/v1/object/surat-masuk`, { method: 'DELETE', headers: cloudHeaders(), body: JSON.stringify([letter.file_path]) });
+  if (!cloudEnabled) letters = letters.filter((item) => item.id !== letter.id);
+  else {
+    const response = await fetch(`${cloudConfig.url}/rest/v1/surat_masuk?id=eq.${letter.id}`, { method: 'DELETE', headers: cloudHeaders() });
+    if (!response.ok) throw new Error('Gagal menghapus surat masuk');
+  }
+  localStorage.setItem('surat-masuk-records', JSON.stringify(letters));
+}
+
+function renderLetters() {
+  const query = letterElements.search.value.trim().toLowerCase();
+  const visibleLetters = letters.filter((letter) => `${letter.tanggal} ${letter.pengirim} ${letter.perihal}`.toLowerCase().includes(query));
+  letterElements.body.innerHTML = visibleLetters.map((letter) => `<tr><td>${formatDate(letter.tanggal)}</td><td>${escapeHtml(letter.pengirim)}</td><td class="event-title">${escapeHtml(letter.perihal)}</td><td>${letter.file_path ? `<a class="file-link" href="${publicPdfUrl(letter.file_path)}" target="_blank" rel="noreferrer">PDF ↗</a>` : '<span class="date-week">Tanpa file</span>'}</td><td><div class="row-actions"><button class="icon-button" type="button" data-letter-action="edit" data-id="${letter.id}" aria-label="Edit ${escapeHtml(letter.perihal)}">✎</button><button class="icon-button delete" type="button" data-letter-action="delete" data-id="${letter.id}" aria-label="Hapus ${escapeHtml(letter.perihal)}">⌫</button></div></td></tr>`).join('');
+  letterElements.empty.hidden = visibleLetters.length > 0;
+}
+
+function openLetterModal(letter) { editingLetterId = letter?.id ?? null; letterElements.title.textContent = editingLetterId ? 'Edit surat masuk' : 'Tambah surat masuk'; letterElements.kicker.textContent = editingLetterId ? 'Perbarui detail' : 'Surat baru'; letterElements.date.value = letter?.tanggal ?? todayString(); letterElements.sender.value = letter?.pengirim ?? ''; letterElements.subject.value = letter?.perihal ?? ''; letterElements.file.value = ''; letterElements.note.textContent = letter?.file_name ? `File saat ini: ${letter.file_name}. Pilih PDF baru untuk menggantinya.` : 'Maksimal 10 MB. File PDF wajib untuk surat baru.'; letterElements.modal.hidden = false; document.body.style.overflow = 'hidden'; window.setTimeout(() => letterElements.sender.focus(), 30); }
+function closeLetterModal() { letterElements.modal.hidden = true; letterElements.form.reset(); editingLetterId = null; document.body.style.overflow = ''; }
+
+document.querySelector('#addLetterButton').addEventListener('click', () => openLetterModal());
+document.querySelector('#emptyLetterButton').addEventListener('click', () => openLetterModal());
+document.querySelector('#letterCloseButton').addEventListener('click', closeLetterModal);
+document.querySelector('#letterCancelButton').addEventListener('click', closeLetterModal);
+letterElements.modal.addEventListener('click', (event) => { if (event.target === letterElements.modal) closeLetterModal(); });
+letterElements.search.addEventListener('input', renderLetters);
+letterElements.form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const wasEditing = Boolean(editingLetterId);
+  try {
+    if (!wasEditing && !letterElements.file.files[0]) throw new Error('File PDF wajib dipilih');
+    await saveLetter({ tanggal: letterElements.date.value, pengirim: letterElements.sender.value.trim(), perihal: letterElements.subject.value.trim() }, letterElements.file.files[0]);
+    letters = await loadLetters(); renderLetters(); closeLetterModal(); showToast(wasEditing ? 'Surat berhasil diperbarui' : 'Surat berhasil ditambahkan');
+  } catch (error) { showToast(error.message); }
+});
+letterElements.body.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-letter-action]');
+  if (!button) return;
+  const letter = letters.find((item) => item.id === button.dataset.id);
+  if (button.dataset.letterAction === 'edit') openLetterModal(letter);
+  if (button.dataset.letterAction === 'delete' && letter && window.confirm(`Hapus surat "${letter.perihal}"?`)) { try { await removeLetter(letter); letters = await loadLetters(); renderLetters(); showToast('Surat berhasil dihapus'); } catch (error) { showToast(error.message); } }
+});
+
+async function initializeLetters() { try { letters = await loadLetters(); renderLetters(); } catch (error) { renderLetters(); showToast(error.message); } }
+initializeLetters();

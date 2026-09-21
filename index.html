@@ -60,6 +60,34 @@
           </div>
         </div>
       </section>
+
+      <section class="agenda-panel surat-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Administrasi</p>
+            <h2>Surat masuk</h2>
+          </div>
+          <div class="panel-tools">
+            <label class="search-box">
+              <span aria-hidden="true">⌕</span>
+              <input id="letterSearchInput" type="search" placeholder="Cari surat..." aria-label="Cari surat" />
+            </label>
+            <button class="primary-button" id="addLetterButton" type="button"><span aria-hidden="true">+</span> Tambah surat</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Pengirim</th><th>Perihal</th><th>File</th><th class="action-heading">Aksi</th></tr></thead>
+            <tbody id="letterBody"></tbody>
+          </table>
+          <div class="empty-state" id="letterEmptyState">
+            <div class="empty-icon" aria-hidden="true">▤</div>
+            <h3>Belum ada surat masuk</h3>
+            <p>Tambahkan surat dan simpan PDF-nya agar mudah ditemukan kembali.</p>
+            <button class="secondary-button" id="emptyLetterButton" type="button">Tambah surat</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div class="modal-backdrop" id="modalBackdrop" hidden>
@@ -72,6 +100,21 @@
           <label>Pemakai<input id="userInput" name="pemakai" type="text" placeholder="Contoh: Rina Pratiwi" required maxlength="60" /></label>
           <label>Acara<textarea id="eventInput" name="acara" rows="3" placeholder="Contoh: Rapat koordinasi bulanan" required maxlength="120"></textarea></label>
           <div class="form-actions"><button class="secondary-button" id="cancelButton" type="button">Batal</button><button class="primary-button" type="submit" id="saveButton">Simpan agenda</button></div>
+        </form>
+      </section>
+    </div>
+    <div class="modal-backdrop" id="letterModalBackdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="letterModalTitle">
+        <button class="close-button" id="letterCloseButton" type="button" aria-label="Tutup">×</button>
+        <p class="section-kicker" id="letterModalKicker">Surat baru</p>
+        <h2 id="letterModalTitle">Tambah surat masuk</h2>
+        <form id="letterForm">
+          <label>Tanggal<input id="letterDateInput" name="tanggal" type="date" required /></label>
+          <label>Pengirim<input id="senderInput" name="pengirim" type="text" placeholder="Contoh: Dinas Pendidikan" required maxlength="100" /></label>
+          <label>Perihal<textarea id="subjectInput" name="perihal" rows="3" placeholder="Contoh: Undangan rapat koordinasi" required maxlength="180"></textarea></label>
+          <label>Kirim file (PDF)<input id="pdfInput" name="file" type="file" accept="application/pdf,.pdf" /></label>
+          <p class="file-note" id="currentFileNote">Maksimal 10 MB. File PDF opsional saat mengedit.</p>
+          <div class="form-actions"><button class="secondary-button" id="letterCancelButton" type="button">Batal</button><button class="primary-button" type="submit">Simpan surat</button></div>
         </form>
       </section>
     </div>
