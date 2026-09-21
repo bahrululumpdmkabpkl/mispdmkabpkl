@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'agenda-harian-records';
+const cloudConfig = window.SUPABASE_CONFIG ?? {};
+const cloudEnabled = Boolean(cloudConfig.url && cloudConfig.anonKey);
 
 const seedAgenda = [
   { id: crypto.randomUUID(), tanggal: '2026-09-22', pemakai: 'Rina Pratiwi', acara: 'Rapat koordinasi bulanan' },
@@ -6,7 +8,7 @@ const seedAgenda = [
   { id: crypto.randomUUID(), tanggal: '2026-09-28', pemakai: 'Sari Wulandari', acara: 'Pelatihan penggunaan ruang meeting' }
 ];
 
-let records = loadRecords();
+let records = loadLocalRecords();
 let editingId = null;
 
 const elements = {
@@ -15,14 +17,37 @@ const elements = {
   search: document.querySelector('#searchInput'), modalTitle: document.querySelector('#modalTitle'), modalKicker: document.querySelector('#modalKicker'), toast: document.querySelector('#toast')
 };
 
-function loadRecords() {
+function loadLocalRecords() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) return JSON.parse(stored);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(seedAgenda));
   return seedAgenda;
 }
 
-function saveRecords() { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+function saveLocalRecords() { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+function cloudHeaders() { return { apikey: cloudConfig.anonKey, Authorization: `Bearer ${cloudConfig.anonKey}`, 'Content-Type': 'application/json' }; }
+async function loadRecords() {
+  if (!cloudEnabled) return loadLocalRecords();
+  const response = await fetch(`${cloudConfig.url}/rest/v1/agenda?select=id,tanggal,pemakai,acara&order=tanggal.asc`, { headers: cloudHeaders() });
+  if (!response.ok) throw new Error('Gagal mengambil agenda dari Supabase');
+  return response.json();
+}
+async function createRecord(data) {
+  if (!cloudEnabled) { const record = { id: crypto.randomUUID(), ...data }; records.push(record); saveLocalRecords(); return record; }
+  const response = await fetch(`${cloudConfig.url}/rest/v1/agenda`, { method: 'POST', headers: { ...cloudHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(data) });
+  if (!response.ok) throw new Error('Gagal menambahkan agenda');
+  return (await response.json())[0];
+}
+async function updateRecord(id, data) {
+  if (!cloudEnabled) { records = records.map((record) => record.id === id ? { ...record, ...data } : record); saveLocalRecords(); return; }
+  const response = await fetch(`${cloudConfig.url}/rest/v1/agenda?id=eq.${id}`, { method: 'PATCH', headers: { ...cloudHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(data) });
+  if (!response.ok) throw new Error('Gagal memperbarui agenda');
+}
+async function deleteRecord(id) {
+  if (!cloudEnabled) { records = records.filter((record) => record.id !== id); saveLocalRecords(); return; }
+  const response = await fetch(`${cloudConfig.url}/rest/v1/agenda?id=eq.${id}`, { method: 'DELETE', headers: cloudHeaders() });
+  if (!response.ok) throw new Error('Gagal menghapus agenda');
+}
 function formatDate(dateString) { return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${dateString}T00:00:00`)); }
 function formatWeekday(dateString) { return new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date(`${dateString}T00:00:00`)); }
 function todayString() { return new Date().toISOString().slice(0, 10); }
@@ -58,20 +83,35 @@ elements.search.addEventListener('input', render);
 
 elements.form.addEventListener('submit', (event) => {
   event.preventDefault();
+  submitForm();
+});
+
+async function submitForm() {
   const wasEditing = Boolean(editingId);
   const data = { tanggal: elements.date.value, pemakai: elements.user.value.trim(), acara: elements.event.value.trim() };
-  if (editingId) records = records.map((record) => record.id === editingId ? { ...record, ...data } : record);
-  else records.push({ id: crypto.randomUUID(), ...data });
-  saveRecords(); render(); closeModal(); showToast(wasEditing ? 'Agenda berhasil diperbarui' : 'Agenda berhasil ditambahkan');
-});
+  try {
+    if (editingId) await updateRecord(editingId, data);
+    else await createRecord(data);
+    records = await loadRecords(); render(); closeModal(); showToast(wasEditing ? 'Agenda berhasil diperbarui' : 'Agenda berhasil ditambahkan');
+  } catch (error) { showToast(error.message); }
+}
 
 elements.body.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const record = records.find((item) => item.id === button.dataset.id);
   if (button.dataset.action === 'edit') openModal(record);
-  if (button.dataset.action === 'delete' && record && window.confirm(`Hapus agenda "${record.acara}"?`)) { records = records.filter((item) => item.id !== record.id); saveRecords(); render(); showToast('Agenda berhasil dihapus'); }
+  if (button.dataset.action === 'delete' && record && window.confirm(`Hapus agenda "${record.acara}"?`)) deleteAgenda(record);
 });
 
 document.querySelector('#todayLabel').textContent = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-render();
+async function deleteAgenda(record) {
+  try { await deleteRecord(record.id); records = await loadRecords(); render(); showToast('Agenda berhasil dihapus'); }
+  catch (error) { showToast(error.message); }
+}
+
+async function initialize() {
+  try { records = await loadRecords(); render(); }
+  catch (error) { render(); showToast(error.message); }
+}
+initialize();
