@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#153b3b" />
+    <title>Agenda Harian</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-mark" aria-hidden="true">AH</div>
+        <div>
+          <p class="eyebrow">Pusat kegiatan</p>
+          <h1>Agenda Harian</h1>
+        </div>
+        <div class="topbar-date" id="todayLabel"></div>
+      </header>
+
+      <section class="intro-row">
+        <div>
+          <p class="section-kicker">Jadwal terkoordinasi</p>
+          <h2>Semua agenda, lebih tertata.</h2>
+          <p class="intro-copy">Catat kegiatan, pantau pemakai, dan jaga hari tetap berjalan sesuai rencana.</p>
+        </div>
+        <button class="primary-button" id="addButton" type="button"><span aria-hidden="true">+</span> Tambah agenda</button>
+      </section>
+
+      <section class="stats-grid" aria-label="Ringkasan agenda">
+        <div class="stat-card accent-card"><span>Total agenda</span><strong id="totalCount">0</strong><small>tersimpan saat ini</small></div>
+        <div class="stat-card"><span>Agenda mendatang</span><strong id="upcomingCount">0</strong><small>mulai hari ini</small></div>
+        <div class="stat-card"><span>Pemakai aktif</span><strong id="userCount">0</strong><small>orang terjadwal</small></div>
+      </section>
+
+      <section class="agenda-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Daftar agenda</p>
+            <h2>Rencana kegiatan</h2>
+          </div>
+          <label class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" placeholder="Cari agenda..." aria-label="Cari agenda" />
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Pemakai</th><th>Acara</th><th class="action-heading">Aksi</th></tr></thead>
+            <tbody id="agendaBody"></tbody>
+          </table>
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-icon" aria-hidden="true">☰</div>
+            <h3>Belum ada agenda</h3>
+            <p>Tambahkan agenda pertama untuk mulai mengatur kegiatan Anda.</p>
+            <button class="secondary-button" id="emptyAddButton" type="button">Tambah agenda</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="modalBackdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="close-button" id="closeButton" type="button" aria-label="Tutup">×</button>
+        <p class="section-kicker" id="modalKicker">Agenda baru</p>
+        <h2 id="modalTitle">Tambah agenda</h2>
+        <form id="agendaForm">
+          <label>Tanggal<input id="dateInput" name="tanggal" type="date" required /></label>
+          <label>Pemakai<input id="userInput" name="pemakai" type="text" placeholder="Contoh: Rina Pratiwi" required maxlength="60" /></label>
+          <label>Acara<textarea id="eventInput" name="acara" rows="3" placeholder="Contoh: Rapat koordinasi bulanan" required maxlength="120"></textarea></label>
+          <div class="form-actions"><button class="secondary-button" id="cancelButton" type="button">Batal</button><button class="primary-button" type="submit" id="saveButton">Simpan agenda</button></div>
+        </form>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
